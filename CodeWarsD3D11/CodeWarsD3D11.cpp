@@ -8,6 +8,9 @@
 #include "shaders.h"
 #include <FreeImage.h>
 #include "textures.h"
+#include <assimp\Importer.hpp>
+#include <assimp\scene.h>
+#include <assimp\postprocess.h>
 
 #define MAX_LOADSTRING 100
 
@@ -22,6 +25,42 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 Renderer* renderer;
+
+bool importModel(const std::string& file, std::vector<XMFLOAT3>& positions, std::vector<XMFLOAT2>& uvs, std::vector<UINT>& indices) {
+	Assimp::Importer importer;
+
+	const aiScene* scene = importer.ReadFile(file, aiProcess_Triangulate );
+	if (!scene) {
+		OutputDebugString(L"model import failed!\n");
+		exit(1);
+	}
+
+	unsigned int numMeshes = scene->mRootNode->mChildren[0]->mNumMeshes;
+	for (int i = 0; i < numMeshes; ++i) {
+		UINT idx = scene->mRootNode->mChildren[0]->mMeshes[i];
+		aiMesh* mesh = scene->mMeshes[i];
+		UINT numUVChannels = mesh->GetNumUVChannels();
+		bool hasTextureCoords = mesh->HasTextureCoords(0);
+		for (int v = 0; v < mesh->mNumVertices; ++v) {
+			aiVector3D vertex = mesh->mVertices[v];
+			aiVector3D texcoord = mesh->mTextureCoords[0][v];
+
+			
+								
+			positions.push_back({ vertex.x, vertex.y, vertex.z });
+			uvs.push_back({ texcoord.x, texcoord.y });
+
+					
+		}
+
+		for (int f = 0; f < mesh->mNumFaces; ++f) {
+			aiFace face = mesh->mFaces[f];
+			indices.push_back({ face.mIndices[0] });
+			indices.push_back({ face.mIndices[1] });
+			indices.push_back({ face.mIndices[2] });
+		}
+	}
+}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -59,9 +98,13 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	uvs.push_back({ 0, 1 });
 	uvs.push_back({ 1, 0 });
 
-	XMMATRIX modelMat = DirectX::XMMatrixScaling(10, 10, 10);
-	XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMVectorSet(0, 3, -5, 1), XMVectorSet(0, 0, 10, 0), XMVectorSet(0, 1, 0, 0));
-	XMMATRIX projMat = DirectX::XMMatrixPerspectiveLH(40, 30, 1, 100);
+	XMMATRIX modelMat = DirectX::XMMatrixScaling(2.5, 2.5, 2.5);
+	
+	XMFLOAT3 eyePos = XMFLOAT3(0, 0, -35);
+	XMFLOAT3 eyeDir = XMFLOAT3(0, 0, 1);
+	XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
+	XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir));
+	XMMATRIX projMat = DirectX::XMMatrixPerspectiveFovLH(0.45, 4.0f / 3.0f, 0.1, 100);
 	modelMat = XMMatrixTranspose(modelMat);
 	viewMat = XMMatrixTranspose(viewMat);
 	projMat = XMMatrixTranspose(projMat);
@@ -123,23 +166,30 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	indices.push_back(3);
 	indices.push_back(1);
 
-
 	renderer->clearBackbuffer(clearColors);
 	renderer->setViewport(0, 0, 800, 600);
 	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
 
+	// model loaded from filesystem
+	std::vector<XMFLOAT3> imp_pos;
+	std::vector<XMFLOAT2> imp_uvs;
+	std::vector<UINT> imp_indices;
+	importModel("models/plane3.obj", imp_pos, imp_uvs, imp_indices);
+	
+	
 	Sleep(2000);
 
 	// render loading screen
 	
-	loadTextureFromFile("textures/grass_64x64.png", &tex, renderer);
+	loadTextureFromFile("textures/cube_diff2.png", &tex, renderer);
 
 	renderer->clearBackbuffer(clearColors);
 	renderer->setViewport(0, 0, 800, 600);
-	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, tex);
+	renderer->renderMesh(imp_pos, imp_uvs, imp_indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
 
+	float rotZ = 0.0f;
 	
 	// Main message loop when done with the static resources
 	while (true) { 
@@ -150,20 +200,32 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		if (msg.message == WM_QUIT) break;
 
+		rotZ += 0.0002f;
+
+		modelMat = DirectX::XMMatrixScaling(2.5, 2.5, 2.5);
+		XMFLOAT3 zAxis = XMFLOAT3(1, 0, 1);
+		XMFLOAT3 yAxis = XMFLOAT3(0, 1, 0);
+		XMMATRIX rotMatZ = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&zAxis), rotZ);
+		XMMATRIX rotMatY = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&yAxis), rotZ);
+		modelMat = XMMatrixMultiply(modelMat, rotMatZ);
+		modelMat = XMMatrixMultiply(modelMat, rotMatY);
+
 		renderer->clearBackbuffer(clearColors);
 		renderer->setViewport(0, 0, 800, 600);
-		renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, nullptr);
+		renderer->renderMesh(imp_pos, imp_uvs, imp_indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, nullptr);
 		renderer->presentBackBuffer();
 	}
 
 	tex->Release();
-	vs->Release();
-	ps->Release();
-	if (errBlob) errBlob->Release();
-	ps->Release();
-	vshader->Release();
-	pShader->Release();
 	inputLayout->Release();
+	pShader->Release();
+	vshader->Release();
+
+	ps->Release();
+	vs->Release();
+	
+	if (errBlob) errBlob->Release();
+	
 
     return (int) msg.wParam;
 }

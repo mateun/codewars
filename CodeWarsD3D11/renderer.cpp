@@ -7,23 +7,25 @@ Renderer::Renderer(int w, int h, HWND hWnd) {
 }
 
 Renderer::~Renderer() {
-	_ctx->ClearState();
+	
 	_depthStencilView->Release();
 	_depthStencilBuffer->Release();
+	_rtv->Release();
 	_backBuffer->Release();
-	_swapChain->Release();
-	_ctx->Release();
 	_debugger->Release();
+	_swapChain->Release();
+	_ctx->ClearState();
+	_ctx->Release();
 	_device->Release();
 }
 
 void Renderer::clearBackbuffer(float *clearColors) {
 	ID3D11RenderTargetView* rtvs[1] = { _rtv };
-	_ctx->OMSetRenderTargets(1, rtvs, NULL);
+	_ctx->OMSetRenderTargets(1, rtvs, _depthStencilView);
 	_ctx->ClearRenderTargetView(_rtv, clearColors);
 
 	// clear our depth target as well
-	_ctx->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH, 0, 0);
+	_ctx->ClearDepthStencilView(_depthStencilView, D3D11_CLEAR_DEPTH, 1, 0);
 }
 
 void Renderer::presentBackBuffer() {
@@ -46,8 +48,8 @@ void Renderer::setViewport(int x, int y, int w, int h) {
 }
 
 void Renderer::render() {
-	_ctx->Release();
-	_device->Release();	
+
+	
 }
 
 
@@ -86,7 +88,7 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	D3D11_BUFFER_DESC ibd;
 	ZeroMemory(&ibd, sizeof(ibd));
 	ibd.Usage = D3D11_USAGE_DEFAULT;
-	ibd.ByteWidth = sizeof(unsigned int) * 6;
+	ibd.ByteWidth = sizeof(unsigned int) * indices.size();
 	ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
 	ibd.CPUAccessFlags = 0;
 	D3D11_SUBRESOURCE_DATA indexData;
@@ -160,7 +162,7 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	ZeroMemory(&rd, sizeof(rd));
 	rd.FillMode = D3D11_FILL_SOLID;
 	rd.DepthClipEnable = true;
-	rd.CullMode = D3D11_CULL_NONE;
+	rd.CullMode = D3D11_CULL_BACK;
 	res = _device->CreateRasterizerState(&rd, &rs);
 	if (FAILED(res)) {
 		OutputDebugString(L"wireframe rs failed\n");
@@ -169,12 +171,16 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 	_ctx->RSSetState(rs);
 	// end RS
 
-	_ctx->DrawIndexed(6, 0, 0);
+	_ctx->DrawIndexed(indices.size(), 0, 0);
 
+	// cleanup
+	rs->Release();
 	if (samplerState) samplerState->Release();
 	if (srv) srv->Release();
-	rs->Release();
-
+	
+	matrixBuffer->Release();
+	indexBuffer->Release();
+	uvBuf->Release();
 	vbuf->Release();
 }
 
@@ -279,11 +285,39 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	dpd.Flags = 0;
 	dpd.Format = DXGI_FORMAT_D32_FLOAT;
 	dpd.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
-
+	
 	result = _device->CreateDepthStencilView(_depthStencilBuffer, &dpd, &_depthStencilView);
 	if (FAILED(result)) {
 		OutputDebugString(L"D S view creation failed\n");
 		exit(1);
 	}
+
+	D3D11_DEPTH_STENCIL_DESC depthStencilDesc;
+	depthStencilDesc.DepthEnable = TRUE;
+	depthStencilDesc.DepthWriteMask = D3D11_DEPTH_WRITE_MASK_ALL;
+	depthStencilDesc.DepthFunc = D3D11_COMPARISON_LESS;
+	depthStencilDesc.StencilEnable = FALSE;
+	depthStencilDesc.StencilReadMask = 0xFF;
+	depthStencilDesc.StencilWriteMask = 0xFF;
+
+	// Stencil operations if pixel is front-facing
+	depthStencilDesc.FrontFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilDepthFailOp = D3D11_STENCIL_OP_INCR;
+	depthStencilDesc.FrontFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDesc.FrontFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	// Stencil operations if pixel is back-facing
+	depthStencilDesc.BackFace.StencilFailOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilDepthFailOp = D3D11_STENCIL_OP_DECR;
+	depthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
+	depthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
+
+	ID3D11DepthStencilState *m_DepthStencilState;
+	result = _device->CreateDepthStencilState(&depthStencilDesc, &m_DepthStencilState);
+	if (FAILED(result)) {
+		OutputDebugString(L"failed to set depth stencil state\n");
+		exit(1);
+	}
+	_ctx->OMSetDepthStencilState(m_DepthStencilState, 0);
 
 }

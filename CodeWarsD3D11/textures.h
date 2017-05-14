@@ -14,7 +14,7 @@ HRESULT loadTextureFromFile(const std::string& fileName, ID3D11Texture2D** textu
 	int h = FreeImage_GetHeight(image);
 	bpp = FreeImage_GetBPP(image);
 	int size = sizeof(BYTE) * w * h * 4;
-	FreeImage_FlipVertical(image);
+	//FreeImage_FlipHorizontal(image);
 	BYTE* bits = FreeImage_GetBits(image);
 	BYTE* data = (BYTE*)malloc(size);
 	memcpy(data, bits, size);
