@@ -106,8 +106,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	renderer->renderMesh(mesh, modelMat, viewMat, projMat, vshader, pShader, inputLayout, nullptr);
 	renderer->presentBackBuffer();
 
-	Sleep(1000);
-
 	// render loading screen
 	ID3D11Texture2D* tex;
 	loadTextureFromFile("textures/grass_64x64.png", &tex, renderer);
