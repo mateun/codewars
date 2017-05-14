@@ -50,44 +50,94 @@ void Renderer::render() {
 	_device->Release();	
 }
 
-void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
+
+void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::vector<XMFLOAT2> &uvs, const std::vector<UINT>& indices, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
 	ID3D11VertexShader* vs, ID3D11PixelShader* ps, ID3D11InputLayout* inputLayout, ID3D11Texture2D* tex) {
 	ID3D11Buffer* vbuf;
-	MY_VERTEX ourVertices[] = 
-	{
-		{0, 0.5, 0, 0.5, 0},
-		{0.5, -0.5, 0, 1, 1},
-		{-0.5, -0.5, 0, 0, 1}
-	};
+	meshVertices.at(0);
+
+
 	D3D11_BUFFER_DESC bd;
 	ZeroMemory(&bd, sizeof(bd));
 	bd.Usage = D3D11_USAGE_DYNAMIC;
-	bd.ByteWidth = sizeof(MY_VERTEX) * 3;
+	bd.ByteWidth = sizeof(XMFLOAT3) * meshVertices.size();
 	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
 	bd.CPUAccessFlags = D3D11_CPU_ACCESS_WRITE;
 	_device->CreateBuffer(&bd, NULL, &vbuf);
 
 	D3D11_MAPPED_SUBRESOURCE ms;
 	_ctx->Map(vbuf, NULL, D3D11_MAP_WRITE_DISCARD, NULL, &ms);
-	memcpy(ms.pData, ourVertices, sizeof(ourVertices));
+	memcpy(ms.pData, meshVertices.data(), sizeof(XMFLOAT3) * meshVertices.size());
 	_ctx->Unmap(vbuf, NULL);
+
+	ID3D11Buffer* uvBuf;
+	ZeroMemory(&bd, sizeof(bd));
+	bd.Usage = D3D11_USAGE_DEFAULT;
+	bd.ByteWidth = sizeof(XMFLOAT2) * uvs.size();
+	bd.BindFlags = D3D11_BIND_VERTEX_BUFFER;
+	D3D11_SUBRESOURCE_DATA uvData;
+	uvData.pSysMem = uvs.data();
+	uvData.SysMemPitch = 0;
+	uvData.SysMemSlicePitch = 0;
+	_device->CreateBuffer(&bd, &uvData, &uvBuf);
+	
+	// Indices
+	//unsigned int indices[] = { 0, 1, 2, 0, 3, 1 };
+	D3D11_BUFFER_DESC ibd;
+	ZeroMemory(&ibd, sizeof(ibd));
+	ibd.Usage = D3D11_USAGE_DEFAULT;
+	ibd.ByteWidth = sizeof(unsigned int) * 6;
+	ibd.BindFlags = D3D11_BIND_INDEX_BUFFER;
+	ibd.CPUAccessFlags = 0;
+	D3D11_SUBRESOURCE_DATA indexData;
+	indexData.pSysMem = indices.data();
+	indexData.SysMemPitch = 0;
+	indexData.SysMemSlicePitch = 0;
+	ID3D11Buffer* indexBuffer;
+	HRESULT res = _device->CreateBuffer(&ibd, &indexData, &indexBuffer);
+	_ctx->IASetIndexBuffer(indexBuffer, DXGI_FORMAT_R32_UINT, 0);
 
 	_ctx->VSSetShader(vs, 0, 0);
 	_ctx->PSSetShader(ps, 0, 0);
 
 	_ctx->IASetInputLayout(inputLayout);
-	UINT stride = sizeof(MY_VERTEX);
+	UINT stride = sizeof(XMFLOAT3);
 	UINT offset = 0;
 	_ctx->IASetVertexBuffers(0, 1, &vbuf, &stride, &offset);
+	UINT uvstride = sizeof(XMFLOAT2);
+	_ctx->IASetVertexBuffers(1, 1, &uvBuf, &uvstride, &offset);
+
+	// Handle mvp matrices
+	D3D11_BUFFER_DESC mbd;
+	ZeroMemory(&mbd, sizeof(mbd));
+	mbd.Usage = D3D11_USAGE_DYNAMIC;
+	mbd.ByteWidth = sizeof(MatrixBufferType);
+	mbd.BindFlags = D3D11_BIND_CONSTANT_BUFFER;
+	mbd.CPUAccessFlags = D3D10_CPU_ACCESS_WRITE;
+	ID3D11Buffer* matrixBuffer;
+	res = _device->CreateBuffer(&mbd, nullptr, &matrixBuffer);
+	if (FAILED(res)) {
+		OutputDebugString(L"matrix constant buffer creation failed\n");
+		exit(1);
+	}
+	D3D11_MAPPED_SUBRESOURCE bufSR;
+	MatrixBufferType* dataPtr;
+	res = _ctx->Map(matrixBuffer, 0, D3D11_MAP_WRITE_DISCARD, 0, &bufSR);
+	dataPtr = (MatrixBufferType*) bufSR.pData;
+	dataPtr->world = modelMatrix;
+	dataPtr->view = viewMatrix;
+	dataPtr->proj = projMatrix;
+	_ctx->Unmap(matrixBuffer, 0);
+	_ctx->VSSetConstantBuffers(0, 1, &matrixBuffer);
 
 	// Handle textures
 	ID3D11SamplerState* samplerState = nullptr;
 	ID3D11ShaderResourceView* srv = nullptr;
 	if (tex) {
-		
+
 		_device->CreateShaderResourceView(tex, NULL, &srv);
 		_ctx->PSSetShaderResources(0, 1, &srv);
-		
+
 		D3D11_SAMPLER_DESC sd;
 		ZeroMemory(&sd, sizeof(sd));
 		sd.AddressU = D3D11_TEXTURE_ADDRESS_WRAP;
@@ -103,13 +153,31 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const XMMAT
 	}
 
 	_ctx->IASetPrimitiveTopology(D3D10_PRIMITIVE_TOPOLOGY_TRIANGLELIST);
-	_ctx->Draw(3, 0);
+
+	// Setting wireframe RS
+	ID3D11RasterizerState* rs;
+	D3D11_RASTERIZER_DESC rd;
+	ZeroMemory(&rd, sizeof(rd));
+	rd.FillMode = D3D11_FILL_SOLID;
+	rd.DepthClipEnable = true;
+	rd.CullMode = D3D11_CULL_NONE;
+	res = _device->CreateRasterizerState(&rd, &rs);
+	if (FAILED(res)) {
+		OutputDebugString(L"wireframe rs failed\n");
+		exit(1);
+	}
+	_ctx->RSSetState(rs);
+	// end RS
+
+	_ctx->DrawIndexed(6, 0, 0);
 
 	if (samplerState) samplerState->Release();
 	if (srv) srv->Release();
-	
+	rs->Release();
+
 	vbuf->Release();
 }
+
 
 void Renderer::init(int w, int h, HWND hWnd) {
 	D3D_FEATURE_LEVEL featureLevels =  D3D_FEATURE_LEVEL_11_0;

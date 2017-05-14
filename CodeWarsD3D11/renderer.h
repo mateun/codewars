@@ -8,8 +8,14 @@
 using namespace DirectX;
 
 struct MY_VERTEX {
-	FLOAT X, Y, Z;
-	FLOAT u, v;
+	XMFLOAT3 pos;
+	XMFLOAT2 uv;
+};
+
+struct MatrixBufferType {
+	XMMATRIX world;
+	XMMATRIX view;
+	XMMATRIX proj;
 };
 
 
@@ -22,7 +28,7 @@ public:
 	void clearBackbuffer(float *colors);
 	void presentBackBuffer();
 	void Renderer::setViewport(int x, int y, int w, int h);
-	void renderMesh(const std::vector<XMFLOAT3> &meshVertices, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix, 
+	void renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::vector<XMFLOAT2> &uvs, const std::vector<UINT>& indices, const XMMATRIX &modelMatrix, const XMMATRIX &viewMatrix, const XMMATRIX &projMatrix,
 							ID3D11VertexShader* vs, ID3D11PixelShader* ps, ID3D11InputLayout* inputLayout,
 							ID3D11Texture2D* tex);
 	const ID3D11Device* getDevice() {

@@ -49,12 +49,22 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     MSG msg;
 	float clearColors[] = { 0.1, 0.1, 0.1, 1.0 };
 	std::vector<XMFLOAT3> mesh;
+	mesh.push_back({ -0.5, 0.5, 0 });
 	mesh.push_back({ 0.5, -0.5, 0 });
 	mesh.push_back({ -0.5, -0.5, 0 });
-	mesh.push_back({ 0.0, 0.5, 0 });
-	XMMATRIX modelMat = DirectX::XMMatrixIdentity();
-	XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMVectorSet(0, 0, -5, 1), XMVectorSet(0, 0, 1, 1), XMVectorSet(0, 1, 0, 1));
-	XMMATRIX projMat = DirectX::XMMatrixPerspectiveLH(800, 600, 1, 100);
+	mesh.push_back({ 0.5, 0.5, 0 });
+	std::vector<XMFLOAT2> uvs;
+	uvs.push_back({ 0, 0 });
+	uvs.push_back({ 1, 1 }); 
+	uvs.push_back({ 0, 1 });
+	uvs.push_back({ 1, 0 });
+
+	XMMATRIX modelMat = DirectX::XMMatrixScaling(10, 10, 10);
+	XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMVectorSet(0, 3, -5, 1), XMVectorSet(0, 0, 10, 0), XMVectorSet(0, 1, 0, 0));
+	XMMATRIX projMat = DirectX::XMMatrixPerspectiveLH(40, 30, 1, 100);
+	modelMat = XMMatrixTranspose(modelMat);
+	viewMat = XMMatrixTranspose(viewMat);
+	projMat = XMMatrixTranspose(projMat);
 
 	ID3DBlob* vs = nullptr;
 	ID3DBlob* errBlob = nullptr;
@@ -94,25 +104,40 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	D3D11_INPUT_ELEMENT_DESC ied[] = {
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
-		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },
+		//{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },	// same slot, but 12 bytes after the pos
+		{"TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 1, 0, D3D11_INPUT_PER_VERTEX_DATA, 0 },		// other slot (buffer), starting at 0
 
 	};
 	ID3D11InputLayout* inputLayout;
 	const_cast<ID3D11Device*>(renderer->getDevice())->CreateInputLayout(ied, 2, vs->GetBufferPointer(), vs->GetBufferSize(), &inputLayout);
 
 	// RenderSplash
+	ID3D11Texture2D* tex;
+	loadTextureFromFile("textures/Wood512x512.png", &tex, renderer);
+	std::vector<UINT> indices; 
+	//0, 1, 2, 0, 3, 1
+	indices.push_back(0);
+	indices.push_back(1);
+	indices.push_back(2);
+	indices.push_back(0);
+	indices.push_back(3);
+	indices.push_back(1);
+
+
 	renderer->clearBackbuffer(clearColors);
 	renderer->setViewport(0, 0, 800, 600);
-	renderer->renderMesh(mesh, modelMat, viewMat, projMat, vshader, pShader, inputLayout, nullptr);
+	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
 
+	Sleep(2000);
+
 	// render loading screen
-	ID3D11Texture2D* tex;
+	
 	loadTextureFromFile("textures/grass_64x64.png", &tex, renderer);
 
 	renderer->clearBackbuffer(clearColors);
 	renderer->setViewport(0, 0, 800, 600);
-	renderer->renderMesh(mesh, modelMat, viewMat, projMat, vshader, pShader, inputLayout, tex);
+	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
 
 	
@@ -127,10 +152,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		renderer->clearBackbuffer(clearColors);
 		renderer->setViewport(0, 0, 800, 600);
-		renderer->renderMesh(mesh, modelMat, viewMat, projMat, vshader, pShader, inputLayout, nullptr);
+		renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, nullptr);
 		renderer->presentBackBuffer();
 	}
 
+	tex->Release();
 	vs->Release();
 	ps->Release();
 	if (errBlob) errBlob->Release();
@@ -138,7 +164,6 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	vshader->Release();
 	pShader->Release();
 	inputLayout->Release();
-
 
     return (int) msg.wParam;
 }

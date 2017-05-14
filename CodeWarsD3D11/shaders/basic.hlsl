@@ -1,12 +1,24 @@
+
+
 struct VOut 
 {
 	float4 pos : SV_POSITION;
 	float2 tex : TEXCOORD0;
 };
 
+cbuffer MatrixBuffer {
+	matrix worldm;
+	matrix viewm;
+	matrix projm;
+};
+
 VOut VShader(float4 position : POSITION, float2 tex : TEXCOORD0) {
+
 	VOut output;
-	output.pos = position;
+	output.pos = mul(position, worldm);
+	output.pos = mul(output.pos, viewm);
+	output.pos = mul(output.pos, projm);
+	//output.pos = position;
 	output.tex = tex;
 	
 	return output;
