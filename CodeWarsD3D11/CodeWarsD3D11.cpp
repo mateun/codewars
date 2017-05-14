@@ -86,7 +86,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_CODEWARSD3D11));
 
     MSG msg;
-	float clearColors[] = { 0.1, 0.1, 0.1, 1.0 };
+	float clearColors[] = { 0.01, 0.02, 0.02, 1.0 };
 	std::vector<XMFLOAT3> mesh;
 	mesh.push_back({ -0.5, 0.5, 0 });
 	mesh.push_back({ 0.5, -0.5, 0 });
@@ -100,7 +100,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	XMMATRIX modelMat = DirectX::XMMatrixScaling(2.5, 2.5, 2.5);
 	
-	XMFLOAT3 eyePos = XMFLOAT3(0, 0, -35);
+	XMFLOAT3 eyePos = XMFLOAT3(0, 0, -55);
 	XMFLOAT3 eyeDir = XMFLOAT3(0, 0, 1);
 	XMFLOAT3 upDir = XMFLOAT3(0, 1, 0);
 	XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir));
@@ -175,14 +175,14 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	std::vector<XMFLOAT3> imp_pos;
 	std::vector<XMFLOAT2> imp_uvs;
 	std::vector<UINT> imp_indices;
-	importModel("models/plane3.obj", imp_pos, imp_uvs, imp_indices);
+	importModel("models/corvette1.obj", imp_pos, imp_uvs, imp_indices);
 	
 	
-	Sleep(2000);
+	//Sleep(2000);
 
 	// render loading screen
 	
-	loadTextureFromFile("textures/cube_diff2.png", &tex, renderer);
+	loadTextureFromFile("textures/SF_Corvette-F3_diffuse.jpg", &tex, renderer);
 
 	renderer->clearBackbuffer(clearColors);
 	renderer->setViewport(0, 0, 800, 600);
@@ -200,12 +200,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		if (msg.message == WM_QUIT) break;
 
-		rotZ += 0.0002f;
+		rotZ += 0.00002f;
 
-		modelMat = DirectX::XMMatrixScaling(2.5, 2.5, 2.5);
+		modelMat = DirectX::XMMatrixScaling(1.5, 1.5, 1.5);
 		XMFLOAT3 zAxis = XMFLOAT3(1, 0, 1);
 		XMFLOAT3 yAxis = XMFLOAT3(0, 1, 0);
-		XMMATRIX rotMatZ = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&zAxis), rotZ);
+		XMMATRIX rotMatZ = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&zAxis), rotZ*2.0f);
 		XMMATRIX rotMatY = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&yAxis), rotZ);
 		modelMat = XMMatrixMultiply(modelMat, rotMatZ);
 		modelMat = XMMatrixMultiply(modelMat, rotMatY);

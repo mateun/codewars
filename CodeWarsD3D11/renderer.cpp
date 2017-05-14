@@ -44,6 +44,8 @@ void Renderer::setViewport(int x, int y, int w, int h) {
 	vp.TopLeftY = 0;
 	vp.Width = 800;
 	vp.Height = 600;
+	vp.MinDepth = 0;
+	vp.MaxDepth = 1;
 	_ctx->RSSetViewports(1, &vp);
 }
 
@@ -195,7 +197,7 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	}
 
 	UINT ql;
-	_device->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UINT, 4, &ql);
+	_device->CheckMultisampleQualityLevels(DXGI_FORMAT_R8G8B8A8_UINT, 8, &ql);
 
 	DXGI_SWAP_CHAIN_DESC scdesc;
 	ZeroMemory(&scdesc, sizeof(scdesc));
@@ -215,7 +217,7 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	scdesc.BufferDesc.ScanlineOrdering = DXGI_MODE_SCANLINE_ORDER_UNSPECIFIED;
 	
 	scdesc.OutputWindow = hWnd;
-	scdesc.SampleDesc.Count = 1;	// 1 sample per pixel
+	scdesc.SampleDesc.Count = 8;	// 1 sample per pixel
 	scdesc.SampleDesc.Quality = 0;
 	scdesc.SwapEffect = DXGI_SWAP_EFFECT_DISCARD;
 	scdesc.Flags = 0;
@@ -267,7 +269,7 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	td.MipLevels = 1;
 	td.ArraySize = 1;
 	td.Format = DXGI_FORMAT_D32_FLOAT;
-	td.SampleDesc.Count = 1;
+	td.SampleDesc.Count = 8;
 	td.SampleDesc.Quality = 0;
 	td.Usage = D3D11_USAGE_DEFAULT;
 	td.BindFlags = D3D11_BIND_DEPTH_STENCIL;
@@ -284,7 +286,7 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	ZeroMemory(&dpd, sizeof(dpd));
 	dpd.Flags = 0;
 	dpd.Format = DXGI_FORMAT_D32_FLOAT;
-	dpd.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2D;
+	dpd.ViewDimension = D3D11_DSV_DIMENSION_TEXTURE2DMS;
 	
 	result = _device->CreateDepthStencilView(_depthStencilBuffer, &dpd, &_depthStencilView);
 	if (FAILED(result)) {
@@ -318,6 +320,6 @@ void Renderer::init(int w, int h, HWND hWnd) {
 		OutputDebugString(L"failed to set depth stencil state\n");
 		exit(1);
 	}
-	_ctx->OMSetDepthStencilState(m_DepthStencilState, 0);
+	//_ctx->OMSetDepthStencilState(m_DepthStencilState, 0);
 
 }
