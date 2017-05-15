@@ -6,6 +6,7 @@ class Spacefight : public Game {
 
 public:
 	Spacefight();
+	~Spacefight();
 	virtual void Init(Renderer& renderer); 
 	virtual void DoFrame(Renderer& renderer);
 	virtual void ShutDown();

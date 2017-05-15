@@ -36,6 +36,10 @@ Spacefight::Spacefight() : clearColors{ 0.01f, 0.02f, 0.02f, 1.0f } {
 
 }
 
+Spacefight::~Spacefight() {
+	ShutDown();
+}
+
 void Spacefight::Init(Renderer& renderer) {
 	
 	// load ship model from filesystem
@@ -117,5 +121,9 @@ void Spacefight::Init(Renderer& renderer) {
 }
 
 void Spacefight::ShutDown() {
-
+	_vs->Release(); _vs = nullptr;
+	_ps->Release(); _ps = nullptr;
+	_shipTexture->Release(); _shipTexture = nullptr;
+	_inputLayout->Release(); _inputLayout = nullptr;
+	delete(_shipModel); _shipModel = nullptr;
 }

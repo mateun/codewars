@@ -143,6 +143,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	Sleep(2000);
 
 	// render loading screen
+	tex->Release();
 	loadTextureFromFile(GetIntroImageName(), &tex, renderer);
 	renderer->clearBackbuffer(clearColors);
 	//renderer->setViewport(0, 0, 800, 600);
@@ -202,7 +203,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 	game->ShutDown();
 	
-
+	delete(game);
+	delete(renderer);
     return (int) msg.wParam;
 }
 

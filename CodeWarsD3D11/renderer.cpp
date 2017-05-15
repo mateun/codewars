@@ -8,15 +8,22 @@ Renderer::Renderer(int w, int h, HWND hWnd) {
 
 Renderer::~Renderer() {
 	
+	OutputDebugString(L"Before renderer cleanup\n");
+	_debugger->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+	_ctx->ClearState();
 	_depthStencilView->Release();
 	_depthStencilBuffer->Release();
 	_rtv->Release();
 	_backBuffer->Release();
 	_debugger->Release();
 	_swapChain->Release();
-	_ctx->ClearState();
+	
 	_ctx->Release();
 	_device->Release();
+	OutputDebugString(L"---------------------------------------------------------------------------------------------------------------------------------------\n");
+	OutputDebugString(L"After renderer cleanup\n");
+	_debugger->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+
 }
 
 void Renderer::clearBackbuffer(float *clearColors) {
@@ -188,7 +195,7 @@ void Renderer::renderMesh(const std::vector<XMFLOAT3> &meshVertices, const std::
 
 
 void Renderer::init(int w, int h, HWND hWnd) {
-	D3D_FEATURE_LEVEL featureLevels =  D3D_FEATURE_LEVEL_11_0;
+	D3D_FEATURE_LEVEL featureLevels =  D3D_FEATURE_LEVEL_11_1;
 
 	HRESULT result = D3D11CreateDevice(NULL, D3D_DRIVER_TYPE_HARDWARE, NULL, D3D11_CREATE_DEVICE_DEBUG, &featureLevels, 1, D3D11_SDK_VERSION, &_device, NULL, &_ctx);
 	if (FAILED(result)) {
@@ -247,6 +254,8 @@ void Renderer::init(int w, int h, HWND hWnd) {
 		OutputDebugString(L"debuger creation failed\n");
 		exit(1);
 	}
+
+	
 
 	// Create a backbuffer
 	result = _swapChain->GetBuffer(0, __uuidof(ID3D11Texture2D), (void**)&_backBuffer);
@@ -314,12 +323,13 @@ void Renderer::init(int w, int h, HWND hWnd) {
 	depthStencilDesc.BackFace.StencilPassOp = D3D11_STENCIL_OP_KEEP;
 	depthStencilDesc.BackFace.StencilFunc = D3D11_COMPARISON_ALWAYS;
 
-	ID3D11DepthStencilState *m_DepthStencilState;
-	result = _device->CreateDepthStencilState(&depthStencilDesc, &m_DepthStencilState);
-	if (FAILED(result)) {
+	// Currently we just use the default from D3D11 ...
+	//ID3D11DepthStencilState *m_DepthStencilState;
+	//result = _device->CreateDepthStencilState(&depthStencilDesc, &m_DepthStencilState);
+	/*if (FAILED(result)) {
 		OutputDebugString(L"failed to set depth stencil state\n");
 		exit(1);
-	}
+	}*/
 	//_ctx->OMSetDepthStencilState(m_DepthStencilState, 0);
 
 }
