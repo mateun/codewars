@@ -145,22 +145,30 @@
   </ItemGroup>
   <ItemGroup>
     <ClInclude Include="CodeWarsD3D11.h" />
+    <ClInclude Include="game.h" />
+    <ClInclude Include="model.h" />
+    <ClInclude Include="model_import.h" />
     <ClInclude Include="renderer.h" />
     <ClInclude Include="Resource.h" />
     <ClInclude Include="shaders.h" />
+    <ClInclude Include="spacefight.h" />
     <ClInclude Include="stdafx.h" />
     <ClInclude Include="targetver.h" />
     <ClInclude Include="textures.h" />
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="CodeWarsD3D11.cpp" />
+    <ClCompile Include="model_import.cpp" />
     <ClCompile Include="renderer.cpp" />
+    <ClCompile Include="shaders.cpp" />
+    <ClCompile Include="spacefight.cpp" />
     <ClCompile Include="stdafx.cpp">
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Debug|x64'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|Win32'">Create</PrecompiledHeader>
       <PrecompiledHeader Condition="'$(Configuration)|$(Platform)'=='Release|x64'">Create</PrecompiledHeader>
     </ClCompile>
+    <ClCompile Include="textures.cpp" />
   </ItemGroup>
   <ItemGroup>
     <ResourceCompile Include="CodeWarsD3D11.rc" />

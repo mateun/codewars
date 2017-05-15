@@ -8,9 +8,8 @@
 #include "shaders.h"
 #include <FreeImage.h>
 #include "textures.h"
-#include <assimp\Importer.hpp>
-#include <assimp\scene.h>
-#include <assimp\postprocess.h>
+#include "game.h"
+#include "model_import.h"
 
 #define MAX_LOADSTRING 100
 
@@ -25,42 +24,6 @@ BOOL                InitInstance(HINSTANCE, int);
 LRESULT CALLBACK    WndProc(HWND, UINT, WPARAM, LPARAM);
 INT_PTR CALLBACK    About(HWND, UINT, WPARAM, LPARAM);
 Renderer* renderer;
-
-bool importModel(const std::string& file, std::vector<XMFLOAT3>& positions, std::vector<XMFLOAT2>& uvs, std::vector<UINT>& indices) {
-	Assimp::Importer importer;
-
-	const aiScene* scene = importer.ReadFile(file, aiProcess_Triangulate );
-	if (!scene) {
-		OutputDebugString(L"model import failed!\n");
-		exit(1);
-	}
-
-	unsigned int numMeshes = scene->mRootNode->mChildren[0]->mNumMeshes;
-	for (int i = 0; i < numMeshes; ++i) {
-		UINT idx = scene->mRootNode->mChildren[0]->mMeshes[i];
-		aiMesh* mesh = scene->mMeshes[i];
-		UINT numUVChannels = mesh->GetNumUVChannels();
-		bool hasTextureCoords = mesh->HasTextureCoords(0);
-		for (int v = 0; v < mesh->mNumVertices; ++v) {
-			aiVector3D vertex = mesh->mVertices[v];
-			aiVector3D texcoord = mesh->mTextureCoords[0][v];
-
-			
-								
-			positions.push_back({ vertex.x, vertex.y, vertex.z });
-			uvs.push_back({ texcoord.x, texcoord.y });
-
-					
-		}
-
-		for (int f = 0; f < mesh->mNumFaces; ++f) {
-			aiFace face = mesh->mFaces[f];
-			indices.push_back({ face.mIndices[0] });
-			indices.push_back({ face.mIndices[1] });
-			indices.push_back({ face.mIndices[2] });
-		}
-	}
-}
 
 int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
                      _In_opt_ HINSTANCE hPrevInstance,
@@ -85,7 +48,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_CODEWARSD3D11));
 
-    MSG msg;
+#pragma region splash_and_loading_screen
 	float clearColors[] = { 0.01, 0.02, 0.02, 1.0 };
 	std::vector<XMFLOAT3> mesh;
 	mesh.push_back({ -0.5, 0.5, 0 });
@@ -93,10 +56,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	mesh.push_back({ -0.5, -0.5, 0 });
 	mesh.push_back({ 0.5, 0.5, 0 });
 	std::vector<XMFLOAT2> uvs;
-	uvs.push_back({ 0, 0 });
-	uvs.push_back({ 1, 1 }); 
 	uvs.push_back({ 0, 1 });
-	uvs.push_back({ 1, 0 });
+	uvs.push_back({ 1, 0 }); 
+	uvs.push_back({ 0, 0 });
+	uvs.push_back({ 1, 1 });
 
 	XMMATRIX modelMat = DirectX::XMMatrixScaling(2.5, 2.5, 2.5);
 	
@@ -109,6 +72,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	viewMat = XMMatrixTranspose(viewMat);
 	projMat = XMMatrixTranspose(projMat);
 
+	/// SHADER SETUP
 	ID3DBlob* vs = nullptr;
 	ID3DBlob* errBlob = nullptr;
 	HRESULT res = D3DCompileFromFile(L"shaders/basic.hlsl", NULL, NULL, "VShader", "vs_5_0", 0, 0, &vs, &errBlob);
@@ -144,7 +108,10 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	CreateVertexShader(renderer->getDevice(), vs, &vshader);
 	ID3D11PixelShader* pShader;
 	CreatePixelShader(renderer->getDevice(), ps, &pShader);
+	/// END SHADER SETUP
 
+
+	/// INPUT LAYOUT SETUP
 	D3D11_INPUT_ELEMENT_DESC ied[] = {
 		{"POSITION", 0, DXGI_FORMAT_R32G32B32_FLOAT, 0, 0, D3D11_INPUT_PER_VERTEX_DATA, 0},
 		//{ "TEXCOORD", 0, DXGI_FORMAT_R32G32_FLOAT, 0, 12, D3D11_INPUT_PER_VERTEX_DATA, 0 },	// same slot, but 12 bytes after the pos
@@ -153,12 +120,12 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	};
 	ID3D11InputLayout* inputLayout;
 	const_cast<ID3D11Device*>(renderer->getDevice())->CreateInputLayout(ied, 2, vs->GetBufferPointer(), vs->GetBufferSize(), &inputLayout);
+	/// END INPUT LAYOUT SETUP
 
 	// RenderSplash
 	ID3D11Texture2D* tex;
-	loadTextureFromFile("textures/Wood512x512.png", &tex, renderer);
+	loadTextureFromFile("textures/engine_splash.png", &tex, renderer);
 	std::vector<UINT> indices; 
-	//0, 1, 2, 0, 3, 1
 	indices.push_back(0);
 	indices.push_back(1);
 	indices.push_back(2);
@@ -166,32 +133,42 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	indices.push_back(3);
 	indices.push_back(1);
 
+	//XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir));
+	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(2.2, 2.2, 0.1, 100);
+	
 	renderer->clearBackbuffer(clearColors);
 	renderer->setViewport(0, 0, 800, 600);
-	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, tex);
+	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
-
-	// model loaded from filesystem
-	std::vector<XMFLOAT3> imp_pos;
-	std::vector<XMFLOAT2> imp_uvs;
-	std::vector<UINT> imp_indices;
-	importModel("models/corvette1.obj", imp_pos, imp_uvs, imp_indices);
-	
-	
-	//Sleep(2000);
+	Sleep(2000);
 
 	// render loading screen
-	
-	loadTextureFromFile("textures/SF_Corvette-F3_diffuse.jpg", &tex, renderer);
-
+	loadTextureFromFile(GetIntroImageName(), &tex, renderer);
 	renderer->clearBackbuffer(clearColors);
-	renderer->setViewport(0, 0, 800, 600);
-	renderer->renderMesh(imp_pos, imp_uvs, imp_indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, tex);
+	//renderer->setViewport(0, 0, 800, 600);
+	projMatSplash = DirectX::XMMatrixOrthographicLH(5, 5, 0.1, 100);
+	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
+	Sleep(3000);
 
+	// Init the game
+	Game* game = GetGame();
+	if (!game) {
+		OutputDebugString(L"No game was provided via GetGame function\n");
+		exit(1);
+	}
+
+	game->Init(*renderer);
+
+	
 	float rotZ = 0.0f;
 	
+	#pragma endregion
+
+	
+
 	// Main message loop when done with the static resources
+	MSG msg;
 	while (true) { 
 		if (PeekMessage(&msg, NULL, 0, 0, PM_REMOVE)) { 
 			TranslateMessage(&msg);
@@ -200,20 +177,17 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 
 		if (msg.message == WM_QUIT) break;
 
-		rotZ += 0.00002f;
+#pragma region test_engine_frame
+		
 
-		modelMat = DirectX::XMMatrixScaling(1.5, 1.5, 1.5);
-		XMFLOAT3 zAxis = XMFLOAT3(1, 0, 1);
-		XMFLOAT3 yAxis = XMFLOAT3(0, 1, 0);
-		XMMATRIX rotMatZ = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&zAxis), rotZ*2.0f);
-		XMMATRIX rotMatY = DirectX::XMMatrixRotationAxis(XMLoadFloat3(&yAxis), rotZ);
-		modelMat = XMMatrixMultiply(modelMat, rotMatZ);
-		modelMat = XMMatrixMultiply(modelMat, rotMatY);
+		//renderer->clearBackbuffer(clearColors);
+		//renderer->setViewport(0, 0, 800, 600);
+		//renderer->renderMesh(imp_pos, imp_uvs, imp_indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, nullptr);
+		//renderer->presentBackBuffer();
+#pragma endregion
 
-		renderer->clearBackbuffer(clearColors);
-		renderer->setViewport(0, 0, 800, 600);
-		renderer->renderMesh(imp_pos, imp_uvs, imp_indices, modelMat, viewMat, projMat, vshader, pShader, inputLayout, nullptr);
-		renderer->presentBackBuffer();
+		game->DoFrame(*renderer);
+
 	}
 
 	tex->Release();
@@ -225,6 +199,8 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	vs->Release();
 	
 	if (errBlob) errBlob->Release();
+
+	game->ShutDown();
 	
 
     return (int) msg.wParam;

@@ -13,14 +13,38 @@
       <UniqueIdentifier>{67DA6AB6-F800-4c08-8B7A-83BB121AAD01}</UniqueIdentifier>
       <Extensions>rc;ico;cur;bmp;dlg;rc2;rct;bin;rgs;gif;jpg;jpeg;jpe;resx;tiff;tif;png;wav;mfcribbon-ms</Extensions>
     </Filter>
-    <Filter Include="Header Files\graphics">
+    <Filter Include="Source Files\engine">
+      <UniqueIdentifier>{86033649-ca5c-4182-b496-79529e9d5a23}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\engine\graphics">
+      <UniqueIdentifier>{ac9cb8cc-00b8-4d05-bc03-4687a855a0d7}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\engine\audio">
+      <UniqueIdentifier>{f79142ce-bcb9-4296-8761-bb9bb71fee4f}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\games">
+      <UniqueIdentifier>{84584b89-7e17-407a-a416-7df089092246}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Source Files\games\spacefight">
+      <UniqueIdentifier>{fb2fbe24-0ea9-4a2e-98f3-612d040626cd}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\engine">
+      <UniqueIdentifier>{f5f6228b-22fe-40cc-903c-f5ee440844be}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\engine\graphics">
       <UniqueIdentifier>{3b3623ac-d744-4aa7-bda3-26c19c3d035b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Header Files\audio">
+    <Filter Include="Header Files\engine\audio">
       <UniqueIdentifier>{5420143c-2695-4b2e-b511-b7aff652bb2b}</UniqueIdentifier>
     </Filter>
-    <Filter Include="Source Files\graphics">
-      <UniqueIdentifier>{ac9cb8cc-00b8-4d05-bc03-4687a855a0d7}</UniqueIdentifier>
+    <Filter Include="Header Files\games">
+      <UniqueIdentifier>{c3b1d1b6-3e40-4411-8fd9-cbf7fb3ae71c}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\games\spacefight">
+      <UniqueIdentifier>{04dcc2be-688c-48dd-9a0d-264ce4bb8e29}</UniqueIdentifier>
+    </Filter>
+    <Filter Include="Header Files\engine\game">
+      <UniqueIdentifier>{40ae552c-61c8-47f2-8268-e171e7913317}</UniqueIdentifier>
     </Filter>
   </ItemGroup>
   <ItemGroup>
@@ -40,24 +64,48 @@
       <Filter>Header Files</Filter>
     </ClInclude>
     <ClInclude Include="renderer.h">
-      <Filter>Header Files\graphics</Filter>
+      <Filter>Header Files\engine\graphics</Filter>
     </ClInclude>
     <ClInclude Include="shaders.h">
-      <Filter>Header Files\graphics</Filter>
+      <Filter>Header Files\engine\graphics</Filter>
     </ClInclude>
     <ClInclude Include="textures.h">
-      <Filter>Header Files\graphics</Filter>
+      <Filter>Header Files\engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="game.h">
+      <Filter>Header Files\engine\game</Filter>
+    </ClInclude>
+    <ClInclude Include="spacefight.h">
+      <Filter>Header Files\games\spacefight</Filter>
+    </ClInclude>
+    <ClInclude Include="model_import.h">
+      <Filter>Header Files\engine\graphics</Filter>
+    </ClInclude>
+    <ClInclude Include="model.h">
+      <Filter>Header Files\engine\graphics</Filter>
     </ClInclude>
   </ItemGroup>
   <ItemGroup>
     <ClCompile Include="stdafx.cpp">
       <Filter>Source Files</Filter>
     </ClCompile>
-    <ClCompile Include="CodeWarsD3D11.cpp">
-      <Filter>Source Files</Filter>
-    </ClCompile>
     <ClCompile Include="renderer.cpp">
-      <Filter>Source Files\graphics</Filter>
+      <Filter>Source Files\engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="CodeWarsD3D11.cpp">
+      <Filter>Source Files\engine</Filter>
+    </ClCompile>
+    <ClCompile Include="spacefight.cpp">
+      <Filter>Source Files\games\spacefight</Filter>
+    </ClCompile>
+    <ClCompile Include="shaders.cpp">
+      <Filter>Source Files\engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="model_import.cpp">
+      <Filter>Source Files\engine\graphics</Filter>
+    </ClCompile>
+    <ClCompile Include="textures.cpp">
+      <Filter>Source Files\engine\graphics</Filter>
     </ClCompile>
   </ItemGroup>
   <ItemGroup>
