@@ -49,17 +49,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
     HACCEL hAccelTable = LoadAccelerators(hInstance, MAKEINTRESOURCE(IDC_CODEWARSD3D11));
 
 #pragma region splash_and_loading_screen
-	float clearColors[] = { 0.01, 0.02, 0.02, 1.0 };
-	std::vector<XMFLOAT3> mesh;
-	mesh.push_back({ -0.5, 0.5, 0 });
-	mesh.push_back({ 0.5, -0.5, 0 });
-	mesh.push_back({ -0.5, -0.5, 0 });
-	mesh.push_back({ 0.5, 0.5, 0 });
-	std::vector<XMFLOAT2> uvs;
-	uvs.push_back({ 0, 1 });
-	uvs.push_back({ 1, 0 }); 
-	uvs.push_back({ 0, 0 });
-	uvs.push_back({ 1, 1 });
+	
 
 	XMMATRIX modelMat = DirectX::XMMatrixScaling(2.5, 2.5, 2.5);
 	
@@ -125,7 +115,28 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	// RenderSplash
 	ID3D11Texture2D* tex;
 	loadTextureFromFile("textures/engine_splash.png", &tex, renderer);
-	std::vector<UINT> indices; 
+	
+	modelMat = DirectX::XMMatrixScaling(2, 2, 2);
+	modelMat = XMMatrixMultiply(modelMat, XMMatrixTranslation(-0.0, 0.0, 0));
+	
+	XMMATRIX viewMatS = XMMatrixIdentity();
+	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(2, 2, 0.1, 100);
+	// This IS IMPORTANT!!! Without this transposition, the quad is totally screwed :) !
+	modelMat = XMMatrixTranspose(modelMat);
+	projMatSplash = XMMatrixTranspose(projMatSplash);
+	
+	float clearColors[] = { 0.01, 0.02, 0.02, 1.0 };
+	std::vector<XMFLOAT3> mesh;
+	mesh.push_back({ -.5, 0.5, 0 });
+	mesh.push_back({ .5, -.5, 0 });
+	mesh.push_back({ -.5, -.5, 0 });
+	mesh.push_back({ .5, .5, 0 });
+	std::vector<XMFLOAT2> uvs;
+	uvs.push_back({ 0, 1 });
+	uvs.push_back({ 1, 0 });
+	uvs.push_back({ 0, 0 });
+	uvs.push_back({ 1, 1 });
+	std::vector<UINT> indices;
 	indices.push_back(0);
 	indices.push_back(1);
 	indices.push_back(2);
@@ -133,14 +144,11 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	indices.push_back(3);
 	indices.push_back(1);
 
-	//XMMATRIX viewMat = DirectX::XMMatrixLookToLH(XMLoadFloat3(&eyePos), XMLoadFloat3(&eyeDir), XMLoadFloat3(&upDir));
-	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(2.2, 2.2, 0.1, 100);
-	
 	renderer->clearBackbuffer(clearColors);
 	renderer->setViewport(0, 0, 800, 600);
-	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
+	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMatS, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
-	Sleep(2000);
+	Sleep(10000);
 
 	// render loading screen
 	tex->Release();
@@ -150,7 +158,7 @@ int APIENTRY wWinMain(_In_ HINSTANCE hInstance,
 	projMatSplash = DirectX::XMMatrixOrthographicLH(5, 5, 0.1, 100);
 	renderer->renderMesh(mesh, uvs, indices, modelMat, viewMat, projMatSplash, vshader, pShader, inputLayout, tex);
 	renderer->presentBackBuffer();
-	Sleep(3000);
+	//Sleep(3000);
 
 	// Init the game
 	Game* game = GetGame();
@@ -280,6 +288,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT message, WPARAM wParam, LPARAM lParam)
 {
     switch (message)
     {
+	case WM_KEYDOWN: 
+		{
+			if (wParam == VK_ESCAPE) DestroyWindow(hWnd);
+		}
     case WM_COMMAND:
         {
             int wmId = LOWORD(wParam);

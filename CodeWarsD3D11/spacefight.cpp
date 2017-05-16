@@ -29,7 +29,51 @@ void Spacefight::DoFrame(Renderer& renderer) {
 	renderer.clearBackbuffer(clearColors);
 	renderer.setViewport(0, 0, 800, 600);
 	renderer.renderMesh(_shipModel->positions, _shipModel->uvs, _shipModel->indices, _modelMat, _viewMat, _projMat, _vs, _ps, _inputLayout, _shipTexture);
+	
+	// Draw a start button
+	ID3D11Texture2D* buttonTex;
+	loadTextureFromFile("textures/games/spacefight/btn_start.png", &buttonTex, &renderer);
+
+
+	XMMATRIX modelMat = DirectX::XMMatrixIdentity();
+	XMMATRIX scaleMat = DirectX::XMMatrixScaling(0.2, 0.2, 0.2);
+	XMMATRIX transMat = DirectX::XMMatrixTranslation(0, 2.75, 0);
+	modelMat = XMMatrixMultiply(transMat, scaleMat);
+	modelMat = transMat;
+	XMFLOAT3 eyePosS = XMFLOAT3(0, 0, -2);
+	XMFLOAT3 eyeDirS = XMFLOAT3(0, 0, 1);
+	XMFLOAT3 upDirS = XMFLOAT3(0, 1, 0);
+	XMMATRIX viewMatS = DirectX::XMMatrixLookToLH(XMLoadFloat3(&eyePosS), XMLoadFloat3(&eyeDirS), XMLoadFloat3(&upDirS));
+	XMMATRIX projMatSplash = DirectX::XMMatrixOrthographicLH(2, 2, 0.1, 100);
+
+	float clearColors[] = { 0.01, 0.02, 0.02, 1.0 };
+	std::vector<XMFLOAT3> mesh;
+	mesh.push_back({ -0.015f, 0.015f, 0 });
+	mesh.push_back({ .015f, -.015f, 0 });
+	mesh.push_back({ -.015f, -.015f, 0 });
+	mesh.push_back({ .015f, .015f, 0 });
+	std::vector<XMFLOAT2> uvs;
+	uvs.push_back({ 0, 1 });
+	uvs.push_back({ 1, 0 });
+	uvs.push_back({ 0, 0 });
+	uvs.push_back({ 1, 1 });
+	std::vector<UINT> indices;
+	indices.push_back(0);
+	indices.push_back(1);
+	indices.push_back(2);
+	indices.push_back(0);
+	indices.push_back(3);
+	indices.push_back(1);
+
+	//renderer.clearBackbuffer(clearColors);
+	//renderer.setViewport(0, 0, 800, 600);
+	renderer.renderMesh(mesh, uvs, indices, modelMat, viewMatS, projMatSplash, _vs, _ps, _inputLayout, buttonTex);
 	renderer.presentBackBuffer();
+
+	buttonTex->Release();
+	buttonTex = nullptr;
+
+
 }
 
 Spacefight::Spacefight() : clearColors{ 0.01f, 0.02f, 0.02f, 1.0f } {

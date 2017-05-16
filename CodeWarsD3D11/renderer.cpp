@@ -15,14 +15,16 @@ Renderer::~Renderer() {
 	_depthStencilBuffer->Release();
 	_rtv->Release();
 	_backBuffer->Release();
-	_debugger->Release();
+	
 	_swapChain->Release();
 	
 	_ctx->Release();
 	_device->Release();
 	OutputDebugString(L"---------------------------------------------------------------------------------------------------------------------------------------\n");
 	OutputDebugString(L"After renderer cleanup\n");
-	_debugger->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+	if (_debugger) _debugger->ReportLiveDeviceObjects(D3D11_RLDO_DETAIL);
+
+	_debugger->Release();
 
 }
 
